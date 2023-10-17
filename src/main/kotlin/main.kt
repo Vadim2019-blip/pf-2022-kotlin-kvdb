@@ -1,4 +1,7 @@
 import java.io.File
+import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.Paths
 /*УТилита kvbd*/
 /*
 1)Как пользоваться:
@@ -13,47 +16,39 @@ basa get 1
 basa put apple 100
 */
 
-/*Проверка на наличие файла*/
-fun isFileExists(file: File): Boolean {
-    return file.exists() && !file.isDirectory
-}
+/*Функция хеширует список байтов. Само идея хеширования нам пригодится, чтобы избавиться от коллизий, а так же обеспечить безопасть, ввиду необратимости хеш функции
+А так же дает допущение произвольных символов в ключе.
+ */
+fun ByteArray.toHex() = joinToString(separator = "") { byte -> "%02x".format(byte) }
 fun main(args: Array<String>) {
-    var input = mapOf<String, String>()
-    var file = args[0]
-    val file_open = File(file)
-    if(!isFileExists(file_open)){
-        println("$file такого файла нету")
+    /*Процесс шифроки строки dbname + key*/
+    val binaryArrDb = args[0].toByteArray()/*Хешируем название стркои и базы даных*/
+    val binaryArrKey = args[2].toByteArray()
+    val hasName = (binaryArrDb +  binaryArrKey).toHex()
+    var file = File(hasName)
+    /*Далее идет основная часть программы с обработкой Бд и парсингом запроса*/
+    if (args[1] == "put") {
+        /*Функция writeText создаст файл с именем file, если его не было, и запишет в него args[3](наше value), это рабоатет за o(1) - время обращение к файлу в каталоге с проектом.*/
+        /*Тут я не стал вызывать исключение, если уже есть в dbname файлик с key, поскольку функция writeText просто перезапишет содержимое*/
+        file.writeText(args[3])
     }
-    else {
-        /*Парсинг содержимого файла преобразование в map*/
-        file_open.useLines { lines -> lines.forEach {input =  input + Pair(it.split(" ")[0], it.split(" ")[1])}}
-    }
-    /*ДАлее идет основная часть программы с обработкой Бд и парсингом запроса*/
-    if(args[1] == "put"){
-        input += Pair(args[2], args[3])
-        val key = args[2]
-        val value = args[3]
-        File(file).appendText("\n$key $value")
-        input += Pair(args[2], args[3])
-    }
-    if(args[1] == "get"){
-        println(input.getOrDefault(args[2], ""))
-    }
-    if(args[1] == "remove"){
-        input -= args[2]
-        file_open.writeText("")
-        for(i in 0..input.size - 1){
-            var key = input.keys.toMutableList()[i]
-            var value = input.values.toMutableList()[i]
-            if(i == 0){
-                file_open.appendText("$key $value")
-            }
-            else {
-                file_open.appendText("\n$key $value")
-            }
+    /*Обработка "get"*/
+    /*Тут мы сделали обработку исключения при ошибке ввода или вывода, например, если файла не существует программа не упадет*/
+    else if(args[1] == "get"){
+        try {
+            val lines = Files.readAllLines(Paths.get(hasName))
+            println(lines[0])
+        } catch (e: IOException) {
+            println("Такого файла нет!")
         }
     }
-
-    println(input)
+    /*Аналогично делаем удаление файла с обработкой исключения*/
+    else if(args[1] == "remove"){
+        try{
+            file.delete()
+        }
+        catch (e: IOException) {
+            println("Такого файла нет!")
+        }
+    }
 }
-
