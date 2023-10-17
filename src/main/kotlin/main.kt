@@ -15,6 +15,10 @@ import java.nio.file.Paths
 basa get 1
 basa put apple 100
 */
+/*Функция, чтобы получить value из файлика, нужна для get*/
+fun Get(A : String): String{
+    return Files.readAllLines(Paths.get(A))[0]
+}
 
 /*Функция хеширует список байтов. Само идея хеширования нам пригодится, чтобы избавиться от коллизий, а так же обеспечить безопасть, ввиду необратимости хеш функции
 А так же дает допущение произвольных символов в ключе.
@@ -36,8 +40,7 @@ fun main(args: Array<String>) {
     /*Тут мы сделали обработку исключения при ошибке ввода или вывода, например, если файла не существует программа не упадет*/
     else if(args[1] == "get"){
         try {
-            val lines = Files.readAllLines(Paths.get(hasName))
-            println(lines[0])
+            println(Get(hasName))
         } catch (e: IOException) {
             println("Такого файла нет!")
         }
